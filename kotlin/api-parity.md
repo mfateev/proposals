@@ -26,47 +26,33 @@ The following Java SDK APIs are **not needed** in the Kotlin SDK due to language
 
 ## Activity API Design Decisions
 
-### Infallible heartbeat() API
+### Heartbeat Throws on Cancellation
 
-The Kotlin SDK provides a single `heartbeat()` method on `KActivityExecutionContext` that is **infallible** - it never throws exceptions:
+The Kotlin SDK `heartbeat()` method on `KActivityContext` **throws `CancellationException`** when the activity is cancelled:
 
 ```kotlin
-context.heartbeat(progressDetails)  // Never throws
+val ctx = KActivityContext.current()
+ctx.heartbeat(progressDetails)  // Throws CancellationException if cancelled
 ```
 
-**Rationale:** Heartbeat is a local operation that records progress. The actual network communication happens asynchronously in the background. Making heartbeat infallible simplifies activity code - cancellation is handled through dedicated cancellation mechanisms (see below).
+**Rationale:** Throwing on cancellation prevents activities from eating worker slots when developers forget to check cancellation. This aligns with Java SDK behavior and ensures consistent cancellation handling for both suspend and non-suspend activities.
 
 ### Activity Cancellation
 
-Cancellation works differently for suspend and non-suspend activities:
-
-**Suspend activities:** Use standard Kotlin coroutine cancellation. `CancellationException` is thrown at suspension points when the activity is cancelled.
+Activity cancellation is delivered via `heartbeat()` - when an activity is cancelled, the next heartbeat call throws `CancellationException`. This works consistently for both suspend and non-suspend activities:
 
 ```kotlin
 override suspend fun processItems(items: List<Item>): ProcessResult {
+    val ctx = KActivityContext.current()
     for (item in items) {
-        processItem(item)  // CancellationException thrown here if cancelled
-    }
-    return ProcessResult(success = true)
-}
-```
-
-**Non-suspend activities:** Use `KActivity.cancellationFuture()` which returns a `CompletableFuture<CancellationDetails>`:
-
-```kotlin
-override fun processItemsBlocking(items: List<Item>): ProcessResult {
-    val cancellationFuture = KActivity.cancellationFuture()
-
-    for (item in items) {
-        if (cancellationFuture.isDone) {
-            val details = cancellationFuture.get()
-            throw CancellationException("Cancelled: ${details.message}")
-        }
+        ctx.heartbeat()  // CancellationException thrown here if cancelled
         processItem(item)
     }
     return ProcessResult(success = true)
 }
 ```
+
+> **TODO:** `KActivityContext.current().cancellationFuture()` will be added when cancellation can be delivered without requiring heartbeat calls (e.g., server-push cancellation).
 
 ### Both Sync and Suspend Activities Supported
 
