@@ -40,16 +40,24 @@ class OrderActivitiesImpl(
 
 ```kotlin
 // Kotlin workflows use method references
+// Argument order: method reference, argument, options
 val isValid = KWorkflow.executeActivity(
     OrderActivities::validateOrder,
-    KActivityOptions(startToCloseTimeout = 10.seconds),
-    order
+    order,
+    KActivityOptions(startToCloseTimeout = 10.seconds)
 )
 
 val payment = KWorkflow.executeActivity(
     OrderActivities::chargePayment,
-    KActivityOptions(startToCloseTimeout = 30.seconds),
-    order
+    order,
+    KActivityOptions(startToCloseTimeout = 30.seconds)
+)
+
+// Multiple arguments use kargs() wrapper for type safety
+val result = KWorkflow.executeActivity(
+    OrderActivities::processOrder,
+    kargs(orderId, customerId),
+    KActivityOptions(startToCloseTimeout = 30.seconds)
 )
 ```
 

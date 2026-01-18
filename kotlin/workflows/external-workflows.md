@@ -58,8 +58,8 @@ class KExternalWorkflowHandle<T>(
     // Signals - type-safe method references
     suspend fun signal(method: KFunction1<T, *>)
     suspend fun <A1> signal(method: KFunction2<T, A1, *>, arg: A1)
-    suspend fun <A1, A2> signal(method: KFunction3<T, A1, A2, *>, arg1: A1, arg2: A2)
-    // ... up to 6 arguments
+    suspend fun <A1, A2> signal(method: KFunction3<T, A1, A2, *>, args: KArgs2<A1, A2>)
+    // ... up to 6 arguments with KArgs
 
     /** Request cancellation of the external workflow. */
     suspend fun cancel()

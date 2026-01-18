@@ -5,23 +5,30 @@
 For calling activities by name (useful for cross-language interop or dynamic activity names):
 
 ```kotlin
-// Execute activity by string name - suspend function, awaits result
+// Execute activity by string name - 1 argument passed directly
 val result = KWorkflow.executeActivity<String>(
     "activityName",
+    arg,
     KActivityOptions(
         startToCloseTimeout = 30.seconds,
         retryOptions = KRetryOptions(
             initialInterval = 1.seconds,
             maximumAttempts = 3
         )
-    ),
-    arg1, arg2
+    )
+)
+
+// Multiple arguments - use kargs() wrapper
+val result = KWorkflow.executeActivity<String>(
+    "activityName",
+    kargs(arg1, arg2),
+    KActivityOptions(startToCloseTimeout = 30.seconds)
 )
 
 // Parallel execution - use standard coroutineScope { async {} }
 val results = coroutineScope {
-    val d1 = async { KWorkflow.executeActivity<String>("activity1", options, arg1) }
-    val d2 = async { KWorkflow.executeActivity<String>("activity2", options, arg2) }
+    val d1 = async { KWorkflow.executeActivity<String>("activity1", arg1, options) }
+    val d2 = async { KWorkflow.executeActivity<String>("activity2", arg2, options) }
     awaitAll(d1, d2)  // Returns List<String>
 }
 ```
@@ -53,27 +60,28 @@ interface CustomNameActivities {
 }
 
 // In workflow - direct method reference, no stub needed
+// Argument order: method reference, arguments, options
 val greeting = KWorkflow.executeActivity(
     GreetingActivities::composeGreeting,  // Direct reference to interface method
-    KActivityOptions(startToCloseTimeout = 30.seconds),
-    "Hello", "World"
+    kargs("Hello", "World"),              // Multiple args use kargs() wrapper
+    KActivityOptions(startToCloseTimeout = 30.seconds)
 )
 
-// Different activity, different options
+// Single argument - passed directly (no kargs needed)
 val result = KWorkflow.executeActivity(
     GreetingActivities::sendEmail,
+    email,
     KActivityOptions(
         startToCloseTimeout = 2.minutes,
         retryOptions = KRetryOptions(maximumAttempts = 5)
-    ),
-    email
+    )
 )
 
 // Void activities work too
 KWorkflow.executeActivity(
     GreetingActivities::log,
-    KActivityOptions(startToCloseTimeout = 5.seconds),
-    "Processing started"
+    "Processing started",
+    KActivityOptions(startToCloseTimeout = 5.seconds)
 )
 ```
 
@@ -107,8 +115,8 @@ The API uses `KFunction` reflection to extract method metadata and provides comp
 // Compile error! Wrong argument types
 KWorkflow.executeActivity(
     GreetingActivities::composeGreeting,
-    options,
-    123, true  // ✗ Type mismatch: expected String, String
+    kargs(123, true),  // ✗ Type mismatch: expected String, String
+    options
 )
 ```
 
@@ -122,8 +130,8 @@ override suspend fun parallelGreetings(names: List<String>): List<String> = coro
         async {
             KWorkflow.executeActivity(
                 GreetingActivities::composeGreeting,
-                KActivityOptions(startToCloseTimeout = 10.seconds),
-                "Hello", name
+                kargs("Hello", name),
+                KActivityOptions(startToCloseTimeout = 10.seconds)
             )
         }
     }.awaitAll()  // Standard kotlinx.coroutines.awaitAll
@@ -131,8 +139,8 @@ override suspend fun parallelGreetings(names: List<String>): List<String> = coro
 
 // Multiple different activities in parallel
 val (result1, result2) = coroutineScope {
-    val d1 = async { KWorkflow.executeActivity(Activities::operation1, options, arg1) }
-    val d2 = async { KWorkflow.executeActivity(Activities::operation2, options, arg2) }
+    val d1 = async { KWorkflow.executeActivity(Activities::operation1, arg1, options) }
+    val d2 = async { KWorkflow.executeActivity(Activities::operation2, arg2, options) }
     awaitAll(d1, d2)
 }
 ```
@@ -151,8 +159,8 @@ Method references work regardless of whether the activity is defined in Kotlin o
 
 val result: PaymentResult = KWorkflow.executeActivity(
     JavaPaymentActivities::processPayment,
-    KActivityOptions(startToCloseTimeout = 2.minutes),
-    orderId, amount
+    kargs(orderId, amount),
+    KActivityOptions(startToCloseTimeout = 2.minutes)
 )
 ```
 
@@ -162,28 +170,50 @@ The `KWorkflow` object provides type-safe overloads using `KFunction` types:
 
 ```kotlin
 object KWorkflow {
-    // 1 argument
+    // 0 arguments
+    suspend fun <T, R> executeActivity(
+        activity: KFunction1<T, R>,
+        options: KActivityOptions
+    ): R
+
+    // 1 argument - passed directly
     suspend fun <T, A1, R> executeActivity(
         activity: KFunction2<T, A1, R>,
-        options: KActivityOptions,
-        arg1: A1
+        arg1: A1,
+        options: KActivityOptions
     ): R
 
-    // 2 arguments
+    // 2+ arguments - use kargs() wrapper for type safety
     suspend fun <T, A1, A2, R> executeActivity(
         activity: KFunction3<T, A1, A2, R>,
-        options: KActivityOptions,
-        arg1: A1, arg2: A2
+        args: KArgs2<A1, A2>,
+        options: KActivityOptions
     ): R
 
-    // ... up to 6 arguments
+    // ... up to 6 arguments with KArgs
 
-    // String-based overloads
+    // String-based overloads (untyped)
+    // 0 arguments
     suspend inline fun <reified R> executeActivity(
         activityName: String,
-        options: KActivityOptions,
-        vararg args: Any?
+        options: KActivityOptions
     ): R
+
+    // 1 argument - passed directly
+    suspend inline fun <reified R, A> executeActivity(
+        activityName: String,
+        arg: A,
+        options: KActivityOptions
+    ): R
+
+    // 2+ arguments - use kargs() wrapper
+    suspend inline fun <reified R, A1, A2> executeActivity(
+        activityName: String,
+        args: KArgs2<A1, A2>,
+        options: KActivityOptions
+    ): R
+
+    // ... up to 6 arguments with KArgs
 }
 ```
 
@@ -225,8 +255,8 @@ class GreetingActivities {
 // In workflow - call using method reference to impl class
 val result = KWorkflow.executeActivity(
     GreetingActivities::composeGreeting,
-    KActivityOptions(startToCloseTimeout = 30.seconds),
-    "Hello", "World"
+    kargs("Hello", "World"),
+    KActivityOptions(startToCloseTimeout = 30.seconds)
 )
 ```
 
@@ -243,31 +273,37 @@ val result = KWorkflow.executeActivity(
 
 ### Type-Safe Activity Arguments
 
-**Status:** Decision needed | [Full discussion](../open-questions.md#type-safe-activityworkflow-arguments)
+**Status:** Decided - Option C (KArgs wrapper classes)
 
-Three options for compile-time type-safe activity arguments:
+For compile-time type-safe activity arguments:
 
-**Option A:** Keep current varargs (no type safety)
+- **0 arguments:** Just method reference and options
+- **1 argument:** Passed directly (most common case)
+- **2+ arguments:** Use `kargs()` wrapper for type safety
 
-**Option B:** Direct overloads (0-7 arguments each)
 ```kotlin
+// 0 arguments
+KWorkflow.executeActivity(
+    GreetingActivities::getDefaultGreeting,
+    KActivityOptions(startToCloseTimeout = 30.seconds)
+)
+
+// 1 argument - passed directly
+KWorkflow.executeActivity(
+    GreetingActivities::greet,
+    name,
+    KActivityOptions(startToCloseTimeout = 30.seconds)
+)
+
+// 2+ arguments - use kargs() wrapper
 KWorkflow.executeActivity(
     GreetingActivities::composeGreeting,
-    "Hello", "World",  // Direct args - type checked
+    kargs("Hello", "World"),  // KArgs2<String, String> - type checked!
     KActivityOptions(startToCloseTimeout = 30.seconds)
 )
 ```
 
-**Option C:** KArgs wrapper classes
-```kotlin
-KWorkflow.executeActivity(
-    GreetingActivities::composeGreeting,
-    kargs("Hello", "World"),  // KArgs2<String, String>
-    KActivityOptions(startToCloseTimeout = 30.seconds)
-)
-```
-
-See [full discussion](../open-questions.md#type-safe-activityworkflow-arguments) for comparison.
+See [full discussion](../open-questions.md#type-safe-activityworkflow-arguments) for rationale.
 
 ---
 

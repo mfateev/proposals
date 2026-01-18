@@ -34,11 +34,11 @@ class OrderWorkflowTest {
         // Execute workflow
         val result = client.executeWorkflow(
             OrderWorkflow::processOrder,
+            testOrder,
             KWorkflowOptions(
                 workflowId = "test-order-123",
                 taskQueue = "test-queue"
-            ),
-            testOrder
+            )
         )
 
         assertEquals(OrderStatus.COMPLETED, result.status)
@@ -107,11 +107,11 @@ fun `test workflow with timers`() = runTest {
     // Start workflow that has a 24-hour delay
     val handle = client.startWorkflow(
         ReminderWorkflow::scheduleReminder,
+        reminder,
         KWorkflowOptions(
             workflowId = "reminder-123",
             taskQueue = "test-queue"
-        ),
-        reminder
+        )
     )
 
     // Skip 24 hours instantly
@@ -152,8 +152,8 @@ fun `test payment is charged`() = runTest {
 
     client.executeWorkflow(
         OrderWorkflow::processOrder,
-        options,
-        testOrder
+        testOrder,
+        options
     )
 
     assertTrue(mockActivities.chargePaymentCalled)
@@ -174,7 +174,7 @@ fun `test with mockk`() = runTest {
     worker.registerActivitiesImplementations(mockActivities)
     testEnv.start()
 
-    val result = client.executeWorkflow(OrderWorkflow::processOrder, options, testOrder)
+    val result = client.executeWorkflow(OrderWorkflow::processOrder, testOrder, options)
 
     coVerify { mockActivities.chargePayment(testOrder) }
     assertTrue(result.success)
@@ -192,8 +192,8 @@ fun `test signal updates workflow state`() = runTest {
 
     val handle = client.startWorkflow(
         OrderWorkflow::processOrder,
-        options,
-        testOrder
+        testOrder,
+        options
     )
 
     // Query initial state
@@ -220,8 +220,8 @@ fun `test update modifies order`() = runTest {
 
     val handle = client.startWorkflow(
         OrderWorkflow::processOrder,
-        options,
-        testOrder
+        testOrder,
+        options
     )
 
     // Execute update
@@ -245,8 +245,8 @@ fun `test workflow handles cancellation gracefully`() = runTest {
 
     val handle = client.startWorkflow(
         OrderWorkflow::processOrder,
-        options,
-        testOrder
+        testOrder,
+        options
     )
 
     // Cancel the workflow
@@ -272,8 +272,8 @@ fun `test parent orchestrates child workflows`() = runTest {
 
     val result = client.executeWorkflow(
         ParentWorkflow::orchestrate,
-        options,
-        parentInput
+        parentInput,
+        options
     )
 
     assertEquals(3, result.childResults.size)

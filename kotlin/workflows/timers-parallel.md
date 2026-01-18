@@ -24,15 +24,15 @@ override suspend fun parallelWorkflow(items: List<Item>): List<Result> = corouti
     // Process all items in parallel using standard Kotlin patterns
     items.map { item ->
         async {
-            KWorkflow.executeActivity(ProcessingActivities::process, options, item)
+            KWorkflow.executeActivity(ProcessingActivities::process, item, options)
         }
     }.awaitAll()  // Standard kotlinx.coroutines.awaitAll
 }
 
 // Another example: parallel activities with different results
 override suspend fun getGreetings(name: String): String = coroutineScope {
-    val hello = async { KWorkflow.executeActivity(GreetingActivities::greet, options, "Hello", name) }
-    val goodbye = async { KWorkflow.executeActivity(GreetingActivities::greet, options, "Goodbye", name) }
+    val hello = async { KWorkflow.executeActivity(GreetingActivities::greet, kargs("Hello", name), options) }
+    val goodbye = async { KWorkflow.executeActivity(GreetingActivities::greet, kargs("Goodbye", name), options) }
 
     // Standard awaitAll works with any Deferred
     val (helloResult, goodbyeResult) = awaitAll(hello, goodbye)
@@ -103,8 +103,8 @@ Race multiple operations and take the first result:
 ```kotlin
 override suspend fun raceOperations(): String = coroutineScope {
     // Start multiple operations
-    val fast = async { KWorkflow.executeActivity(Activities::fastOperation, options) }
-    val slow = async { KWorkflow.executeActivity(Activities::slowOperation, options) }
+    val fast = async { KWorkflow.executeActivity(Activities::fastOperation, input, options) }
+    val slow = async { KWorkflow.executeActivity(Activities::slowOperation, input, options) }
 
     // Use select to get first result
     select {

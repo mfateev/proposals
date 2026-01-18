@@ -165,11 +165,14 @@ open class KWorkflowHandle<T>(
     // Note: Signal handlers can be either suspend or non-suspend functions
     suspend fun signal(method: KFunction1<T, Unit>)
     suspend fun <A1> signal(method: KFunction2<T, A1, Unit>, arg: A1)
-    suspend fun <A1, A2> signal(method: KFunction3<T, A1, A2, Unit>, arg1: A1, arg2: A2)
+    suspend fun <A1, A2> signal(method: KFunction3<T, A1, A2, Unit>, args: KArgs2<A1, A2>)
+    // ... up to 6 arguments with KArgs
 
     // Queries - type-safe method references (suspend for network I/O)
     suspend fun <R> query(method: KFunction1<T, R>): R
     suspend fun <R, A1> query(method: KFunction2<T, A1, R>, arg: A1): R
+    suspend fun <R, A1, A2> query(method: KFunction3<T, A1, A2, R>, args: KArgs2<A1, A2>): R
+    // ... up to 6 arguments with KArgs
 
     // Updates - execute and wait for result (options always last)
     suspend fun <R> executeUpdate(
@@ -181,7 +184,12 @@ open class KWorkflowHandle<T>(
         arg: A1,
         options: KUpdateOptions = KUpdateOptions()
     ): R
-    // ... up to 6 arguments
+    suspend fun <R, A1, A2> executeUpdate(
+        method: KSuspendFunction3<T, A1, A2, R>,
+        args: KArgs2<A1, A2>,
+        options: KUpdateOptions = KUpdateOptions()
+    ): R
+    // ... up to 6 arguments with KArgs
 
     // Updates - start and return handle (waitForStage required in options)
     suspend fun <R> startUpdate(
@@ -193,7 +201,12 @@ open class KWorkflowHandle<T>(
         arg: A1,
         options: KStartUpdateOptions
     ): KUpdateHandle<R>
-    // ... up to 6 arguments
+    suspend fun <R, A1, A2> startUpdate(
+        method: KSuspendFunction3<T, A1, A2, R>,
+        args: KArgs2<A1, A2>,
+        options: KStartUpdateOptions
+    ): KUpdateHandle<R>
+    // ... up to 6 arguments with KArgs
 }
 ```
 
@@ -222,15 +235,15 @@ class KWorkflowHandleWithResult<T, R>(
 // startWorkflow captures result type from method reference
 suspend fun <T, A1, R> startWorkflow(
     workflow: KSuspendFunction2<T, A1, R>,  // R is captured here
-    options: KWorkflowOptions,
-    arg: A1
+    arg: A1,
+    options: KWorkflowOptions
 ): KWorkflowHandleWithResult<T, R>  // R is preserved in return type
 
 // Usage - result type is inferred
 val handle = client.startWorkflow(
     OrderWorkflow::processOrder,  // KSuspendFunction2<OrderWorkflow, Order, OrderResult>
-    options,
-    order
+    order,
+    options
 )
 val result: OrderResult = handle.result()  // No type parameter needed!
 

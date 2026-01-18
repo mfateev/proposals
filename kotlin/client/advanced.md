@@ -10,11 +10,11 @@ Atomically start a workflow and send a signal. If the workflow already exists, o
 // Create handle (not yet started)
 val handle = client.withStartWorkflowOperation(
     OrderWorkflow::processOrder,
+    order,
     KWorkflowOptions(
         workflowId = "order-123",
         taskQueue = "orders"
-    ),
-    order
+    )
 )
 
 // Atomically start workflow and send signal
@@ -53,12 +53,12 @@ data class KUpdateWithStartOptions(
 // Create handle (not yet started)
 val handle = client.withStartWorkflowOperation(
     OrderWorkflow::processOrder,
+    order,
     KWorkflowOptions(
         workflowId = "order-123",
         taskQueue = "orders",
         workflowIdConflictPolicy = WorkflowIdConflictPolicy.USE_EXISTING
-    ),
-    order
+    )
 )
 
 // Execute update with start (waits for update completion)
@@ -80,12 +80,12 @@ val workflowResult: OrderResult = handle.result()
 // Create handle (not yet started)
 val handle = client.withStartWorkflowOperation(
     OrderWorkflow::processOrder,
+    order,
     KWorkflowOptions(
         workflowId = "order-456",
         taskQueue = "orders",
         workflowIdConflictPolicy = WorkflowIdConflictPolicy.FAIL
-    ),
-    order
+    )
 )
 
 // Start update and return immediately after it's accepted
@@ -119,8 +119,8 @@ class KWorkflowClient {
 
     fun <T, A1, R> withStartWorkflowOperation(
         workflow: KSuspendFunction2<T, A1, R>,
-        options: KWorkflowOptions,
-        arg1: A1
+        arg1: A1,
+        options: KWorkflowOptions
     ): KWorkflowHandleWithResult<T, R>
 
     /**

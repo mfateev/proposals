@@ -34,21 +34,21 @@ val client = KClient.connect(
 // Execute and wait for result
 val result = client.executeWorkflow(
     GreetingWorkflow::getGreeting,
+    "Temporal",
     KWorkflowOptions(
         workflowId = "greeting-123",
         taskQueue = "greetings"
-    ),
-    "Temporal"
+    )
 )
 
 // Start async and get handle
 val handle = client.startWorkflow(
     GreetingWorkflow::getGreeting,
+    "Temporal",
     KWorkflowOptions(
         workflowId = "greeting-123",
         taskQueue = "greetings"
-    ),
-    "Temporal"
+    )
 )
 val result = handle.result()
 ```
@@ -75,8 +75,8 @@ handle.cancel()
 
 | Pattern | API |
 |---------|-----|
-| Execute workflow | `client.executeWorkflow(Interface::method, options, args)` |
-| Start workflow | `client.startWorkflow(Interface::method, options, args)` |
+| Execute workflow | `client.executeWorkflow(Interface::method, arg, options)` |
+| Start workflow | `client.startWorkflow(Interface::method, arg, options)` |
 | Get handle by ID | `client.workflowHandle<T>(workflowId)` |
 | Signal with start | `client.signalWithStart(...)` |
 | Update with start | `client.executeUpdateWithStart(...)` |

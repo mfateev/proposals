@@ -13,14 +13,14 @@ interface ValidationActivities {
 
 val isValid = KWorkflow.executeLocalActivity(
     ValidationActivities::validate,
-    KLocalActivityOptions(startToCloseTimeout = 5.seconds),
-    input
+    input,
+    KLocalActivityOptions(startToCloseTimeout = 5.seconds)
 )
 
 val sanitized = KWorkflow.executeLocalActivity(
     ValidationActivities::sanitize,
-    KLocalActivityOptions(startToCloseTimeout = 1.seconds),
-    input
+    input,
+    KLocalActivityOptions(startToCloseTimeout = 1.seconds)
 )
 ```
 
@@ -31,18 +31,28 @@ object KWorkflow {
     /**
      * Execute a local activity with type-safe method reference.
      */
-    suspend fun <T, A1, R> executeLocalActivity(
-        activity: KFunction2<T, A1, R>,
-        options: KLocalActivityOptions,
-        arg1: A1
-    ): R
 
+    // 0 arguments
     suspend fun <T, R> executeLocalActivity(
         activity: KFunction1<T, R>,
         options: KLocalActivityOptions
     ): R
 
-    // ... up to 6 arguments
+    // 1 argument - passed directly
+    suspend fun <T, A1, R> executeLocalActivity(
+        activity: KFunction2<T, A1, R>,
+        arg1: A1,
+        options: KLocalActivityOptions
+    ): R
+
+    // 2+ arguments - use kargs() wrapper for type safety
+    suspend fun <T, A1, A2, R> executeLocalActivity(
+        activity: KFunction3<T, A1, A2, R>,
+        args: KArgs2<A1, A2>,
+        options: KLocalActivityOptions
+    ): R
+
+    // ... up to 6 arguments with KArgs
 }
 ```
 

@@ -6,11 +6,12 @@ Child workflows are invoked using direct method references - no stub creation ne
 
 ```kotlin
 // Simple case - execute child workflow and wait for result
+// Argument order: method reference, argument, options
 override suspend fun parentWorkflow(): String {
     return KWorkflow.executeChildWorkflow(
         ChildWorkflow::doWork,
-        KChildWorkflowOptions(workflowId = "child-workflow-id"),
-        "input"
+        "input",
+        KChildWorkflowOptions(workflowId = "child-workflow-id")
     )
 }
 
@@ -18,12 +19,21 @@ override suspend fun parentWorkflow(): String {
 override suspend fun parentWorkflowWithRetry(): String {
     return KWorkflow.executeChildWorkflow(
         ChildWorkflow::doWork,
+        "input",
         KChildWorkflowOptions(
             workflowId = "child-workflow-id",
             workflowExecutionTimeout = 1.hours,
             retryOptions = KRetryOptions(maximumAttempts = 3)
-        ),
-        "input"
+        )
+    )
+}
+
+// Multiple arguments use kargs() wrapper for type safety
+override suspend fun parentWithMultipleArgs(): String {
+    return KWorkflow.executeChildWorkflow(
+        ChildWorkflow::processWithConfig,
+        kargs(input, config),
+        KChildWorkflowOptions(workflowId = "child-workflow-id")
     )
 }
 ```
@@ -38,8 +48,8 @@ override suspend fun parentWorkflowParallel(): String = coroutineScope {
     val childDeferred = async {
         KWorkflow.executeChildWorkflow(
             ChildWorkflow::doWork,
-            KChildWorkflowOptions(workflowId = "child-workflow-id"),
-            "input"
+            "input",
+            KChildWorkflowOptions(workflowId = "child-workflow-id")
         )
     }
     val activityDeferred = async {
@@ -64,8 +74,8 @@ For cases where you need to interact with a child workflow (signal, query, cance
 override suspend fun parentWorkflowWithHandle(): String {
     val handle = KWorkflow.startChildWorkflow(
         ChildWorkflow::doWork,
-        KChildWorkflowOptions(workflowId = "child-workflow-id"),
-        "input"
+        "input",
+        KChildWorkflowOptions(workflowId = "child-workflow-id")
     )
 
     // Can signal the child workflow
@@ -80,8 +90,8 @@ override suspend fun parallelChildrenWithHandles(): List<String> = coroutineScop
     val handles = listOf("child-1", "child-2", "child-3").map { id ->
         KWorkflow.startChildWorkflow(
             ChildWorkflow::doWork,
-            KChildWorkflowOptions(workflowId = id),
-            "input"
+            "input",
+            KChildWorkflowOptions(workflowId = id)
         )
     }
 
@@ -103,43 +113,56 @@ object KWorkflow {
      * Execute a child workflow and wait for its result.
      * For fire-and-wait cases where you don't need to interact with the child.
      */
-    suspend fun <T, A1, R> executeChildWorkflow(
-        workflow: KFunction2<T, A1, R>,
-        options: KChildWorkflowOptions,
-        arg: A1
-    ): R
 
+    // 0 arguments
     suspend fun <T, R> executeChildWorkflow(
         workflow: KFunction1<T, R>,
         options: KChildWorkflowOptions
     ): R
 
-    // ... up to 6 arguments
+    // 1 argument - passed directly
+    suspend fun <T, A1, R> executeChildWorkflow(
+        workflow: KFunction2<T, A1, R>,
+        arg: A1,
+        options: KChildWorkflowOptions
+    ): R
+
+    // 2+ arguments - use kargs() wrapper for type safety
+    suspend fun <T, A1, A2, R> executeChildWorkflow(
+        workflow: KFunction3<T, A1, A2, R>,
+        args: KArgs2<A1, A2>,
+        options: KChildWorkflowOptions
+    ): R
+
+    // ... up to 6 arguments with KArgs
 
     /**
      * Start a child workflow and return a handle for interaction.
      * Use this when you need to signal, query, or cancel the child workflow.
      * For simple fire-and-wait cases, prefer executeChildWorkflow() instead.
      */
-    suspend fun <T, A1, R> startChildWorkflow(
-        workflow: KFunction2<T, A1, R>,
-        options: KChildWorkflowOptions,
-        arg: A1
-    ): KChildWorkflowHandle<T, R>
 
+    // 0 arguments
     suspend fun <T, R> startChildWorkflow(
         workflow: KFunction1<T, R>,
         options: KChildWorkflowOptions
     ): KChildWorkflowHandle<T, R>
 
-    suspend fun <T, A1, A2, R> startChildWorkflow(
-        workflow: KFunction3<T, A1, A2, R>,
-        options: KChildWorkflowOptions,
-        arg1: A1,
-        arg2: A2
+    // 1 argument - passed directly
+    suspend fun <T, A1, R> startChildWorkflow(
+        workflow: KFunction2<T, A1, R>,
+        arg: A1,
+        options: KChildWorkflowOptions
     ): KChildWorkflowHandle<T, R>
 
-    // ... up to 6 arguments
+    // 2+ arguments - use kargs() wrapper for type safety
+    suspend fun <T, A1, A2, R> startChildWorkflow(
+        workflow: KFunction3<T, A1, A2, R>,
+        args: KArgs2<A1, A2>,
+        options: KChildWorkflowOptions
+    ): KChildWorkflowHandle<T, R>
+
+    // ... up to 6 arguments with KArgs
 }
 ```
 
@@ -172,7 +195,8 @@ interface KChildWorkflowHandle<T, R> {
     // Signals - type-safe method references
     suspend fun signal(method: KFunction1<T, *>)
     suspend fun <A1> signal(method: KFunction2<T, A1, *>, arg: A1)
-    suspend fun <A1, A2> signal(method: KFunction3<T, A1, A2, *>, arg1: A1, arg2: A2)
+    suspend fun <A1, A2> signal(method: KFunction3<T, A1, A2, *>, args: KArgs2<A1, A2>)
+    // ... up to 6 arguments with KArgs
 
     /**
      * Request cancellation of the child workflow.
@@ -202,8 +226,8 @@ KChildWorkflowOptions(
 // Minimal options - just use defaults
 val result = KWorkflow.executeChildWorkflow(
     ChildWorkflow::processData,
-    KChildWorkflowOptions(),
-    inputData
+    inputData,
+    KChildWorkflowOptions()
 )
 ```
 

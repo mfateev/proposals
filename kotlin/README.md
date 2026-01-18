@@ -43,6 +43,7 @@ This approach provides:
 ### Core Concepts
 
 - **[Kotlin Idioms](./kotlin-idioms.md)** - Duration, null safety, property syntax for queries
+- **[KArgs](./kargs.md)** - Type-safe multi-argument wrapper for activities, workflows, signals
 - **[Configuration](./configuration/README.md)** - KOptions classes, data conversion, interceptors
 
 ### Building Blocks
@@ -104,8 +105,8 @@ class GreetingWorkflowImpl : GreetingWorkflow {
     override suspend fun getGreeting(name: String): String {
         return KWorkflow.executeActivity(
             GreetingActivities::composeGreeting,
-            KActivityOptions(startToCloseTimeout = 10.seconds),
-            "Hello", name
+            kargs("Hello", name),
+            KActivityOptions(startToCloseTimeout = 10.seconds)
         )
     }
 }
@@ -121,11 +122,11 @@ val worker = KWorker(
 )
 worker.start()
 
-// Execute workflow
+// Execute workflow - argument order: method ref, arg, options
 val result = client.executeWorkflow(
     GreetingWorkflow::getGreeting,
-    KWorkflowOptions(workflowId = "greeting-123", taskQueue = "greetings"),
-    "Temporal"
+    "Temporal",
+    KWorkflowOptions(workflowId = "greeting-123", taskQueue = "greetings")
 )
 ```
 

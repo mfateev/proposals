@@ -6,9 +6,9 @@
 |----------|------------|
 | **Client** | |
 | `WorkflowClient.newInstance(service)` | `KClient.connect(options)` |
-| `client.newWorkflowStub(Cls, opts)` | `client.startWorkflow(Interface::method, options, ...)` |
+| `client.newWorkflowStub(Cls, opts)` | `client.startWorkflow(Interface::method, arg, options)` |
 | `client.newWorkflowStub(Cls, id)` | `client.workflowHandle<T>(id)` |
-| `stub.method(arg)` | `client.executeWorkflow(Interface::method, options, arg)` |
+| `stub.method(arg)` | `client.executeWorkflow(Interface::method, arg, options)` |
 | `stub.signal(arg)` | `handle.signal(T::method, arg)` |
 | `stub.query()` | `handle.query(T::method)` |
 | `handle.getResult()` | `handle.result()` or `handle.result<R>()` |
@@ -37,13 +37,13 @@
 | `Workflow.getCurrentUpdateInfo()` | `KWorkflow.currentUpdateInfo` |
 | **Activities (from workflow)** | |
 | `Workflow.newActivityStub(Cls, opts)` | *(not needed - options passed per call)* |
-| `stub.method(arg)` | `KWorkflow.executeActivity(Interface::method, options, arg)` |
+| `stub.method(arg)` | `KWorkflow.executeActivity(Interface::method, arg, options)` |
 | `Workflow.newLocalActivityStub(Cls, opts)` | *(not needed - options passed per call)* |
-| `localStub.method(arg)` | `KWorkflow.executeLocalActivity(Interface::method, options, arg)` |
+| `localStub.method(arg)` | `KWorkflow.executeLocalActivity(Interface::method, arg, options)` |
 | `Async.function(stub::method, arg)` | `coroutineScope { async { KWorkflow.executeActivity(...) } }` |
 | **Child Workflows** | |
 | `Workflow.newChildWorkflowStub(Cls, opts)` | *(not needed - options passed per call)* |
-| `childStub.method(arg)` | `KWorkflow.executeChildWorkflow(Interface::method, options, arg)` |
+| `childStub.method(arg)` | `KWorkflow.executeChildWorkflow(Interface::method, arg, options)` |
 | `Async.function(childStub::method, arg)` | `KWorkflow.startChildWorkflow(...)` → `KChildWorkflowHandle` |
 | `Workflow.getWorkflowExecution(childStub)` | `childHandle.workflowId` / `childHandle.runId()` |
 | **External Workflows** | |
@@ -114,8 +114,8 @@ class GreetingWorkflowImpl : GreetingWorkflow {
     override suspend fun getGreeting(name: String): String {
         return KWorkflow.executeActivity<String>(
             "greet",
-            KActivityOptions(startToCloseTimeout = 30.seconds),
-            name
+            name,
+            KActivityOptions(startToCloseTimeout = 30.seconds)
         )
     }
 }
@@ -130,8 +130,8 @@ override suspend fun processOrder(order: Order): String {
     // JavaActivities is a Java @ActivityInterface - no stub needed
     return KWorkflow.executeActivity(
         JavaActivities::process,
-        KActivityOptions(startToCloseTimeout = 30.seconds),
-        order
+        order,
+        KActivityOptions(startToCloseTimeout = 30.seconds)
     )
 }
 ```
@@ -141,8 +141,8 @@ override suspend fun processOrder(order: Order): String {
 ```kotlin
 val result = client.executeWorkflow(
     JavaWorkflowInterface::execute,
-    KWorkflowOptions(workflowId = "java-workflow", taskQueue = "java-queue"),
-    input
+    input,
+    KWorkflowOptions(workflowId = "java-workflow", taskQueue = "java-queue")
 )
 ```
 

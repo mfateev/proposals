@@ -19,20 +19,21 @@ class GreetingWorkflowImpl : GreetingWorkflow {
     override suspend fun getGreeting(name: String): String {
         return KWorkflow.executeActivity(
             GreetingActivities::composeGreeting,
-            KActivityOptions(startToCloseTimeout = 10.seconds),
-            "Hello", name
+            kargs("Hello", name),
+            KActivityOptions(startToCloseTimeout = 10.seconds)
         )
     }
 }
 
 // Client call using KClient - same pattern as activities, no stub needed
+// Argument order: method reference, argument, options
 val result = client.executeWorkflow(
     GreetingWorkflow::getGreeting,
+    "Temporal",
     KWorkflowOptions(
         workflowId = "greeting-123",
         taskQueue = "greetings"
-    ),
-    "Temporal"
+    )
 )
 ```
 
@@ -53,11 +54,11 @@ Kotlin clients can call Java workflows using typed method references:
 // Kotlin client calling Java workflow - works seamlessly
 val result: OrderResult = client.executeWorkflow(
     OrderWorkflow::processOrder,
+    order,
     KWorkflowOptions(
         workflowId = "order-123",
         taskQueue = "orders"
-    ),
-    order
+    )
 )
 ```
 
@@ -174,8 +175,8 @@ class GreetingWorkflow {
     suspend fun getGreeting(name: String): String {
         return KWorkflow.executeActivity(
             GreetingActivities::composeGreeting,
-            KActivityOptions(startToCloseTimeout = 10.seconds),
-            "Hello", name
+            kargs("Hello", name),
+            KActivityOptions(startToCloseTimeout = 10.seconds)
         )
     }
 }
@@ -183,8 +184,8 @@ class GreetingWorkflow {
 // Client call using method reference to impl class
 val result = client.executeWorkflow(
     GreetingWorkflow::getGreeting,
-    KWorkflowOptions(workflowId = "greeting-123", taskQueue = "greetings"),
-    "World"
+    "World",
+    KWorkflowOptions(workflowId = "greeting-123", taskQueue = "greetings")
 )
 ```
 

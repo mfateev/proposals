@@ -43,18 +43,25 @@ class GreetingActivitiesImpl : GreetingActivities {
 ### Calling Activities from Workflows
 
 ```kotlin
-// Type-safe method reference
+// Type-safe method reference - single argument passed directly
+val greeting = KWorkflow.executeActivity(
+    GreetingActivities::greet,
+    name,
+    KActivityOptions(startToCloseTimeout = 30.seconds)
+)
+
+// Multiple arguments use kargs() wrapper for type safety
 val greeting = KWorkflow.executeActivity(
     GreetingActivities::composeGreeting,
-    KActivityOptions(startToCloseTimeout = 30.seconds),
-    "Hello", "World"
+    kargs("Hello", "World"),
+    KActivityOptions(startToCloseTimeout = 30.seconds)
 )
 
 // String-based (for cross-language interop)
 val result = KWorkflow.executeActivity<String>(
     "composeGreeting",
-    KActivityOptions(startToCloseTimeout = 30.seconds),
-    "Hello", "World"
+    kargs("Hello", "World"),
+    KActivityOptions(startToCloseTimeout = 30.seconds)
 )
 ```
 
@@ -62,9 +69,9 @@ val result = KWorkflow.executeActivity<String>(
 
 | Pattern | API |
 |---------|-----|
-| Execute activity | `KWorkflow.executeActivity(Interface::method, options, args)` |
-| Execute by name | `KWorkflow.executeActivity<R>("name", options, args)` |
-| Local activity | `KWorkflow.executeLocalActivity(Interface::method, options, args)` |
+| Execute activity | `KWorkflow.executeActivity(Interface::method, arg, options)` |
+| Execute by name | `KWorkflow.executeActivity<R>("name", arg, options)` |
+| Local activity | `KWorkflow.executeLocalActivity(Interface::method, arg, options)` |
 | Heartbeat | `KActivityContext.current().heartbeat(details)` |
 
 ## Related

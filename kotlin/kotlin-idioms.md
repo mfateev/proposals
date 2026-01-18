@@ -62,8 +62,8 @@ Use standard `kotlinx.coroutines` patterns for parallel execution:
 ```kotlin
 override suspend fun processOrder(order: Order): OrderResult = coroutineScope {
     // Parallel execution using standard async
-    val validation = async { KWorkflow.executeActivity(OrderActivities::validateOrder, options, order) }
-    val inventory = async { KWorkflow.executeActivity(OrderActivities::checkInventory, options, order) }
+    val validation = async { KWorkflow.executeActivity(OrderActivities::validateOrder, order, options) }
+    val inventory = async { KWorkflow.executeActivity(OrderActivities::checkInventory, order, options) }
 
     // Wait for all - standard awaitAll
     val (isValid, hasInventory) = awaitAll(validation, inventory)
@@ -73,8 +73,8 @@ override suspend fun processOrder(order: Order): OrderResult = coroutineScope {
     }
 
     // Sequential execution
-    val charged = KWorkflow.executeActivity(OrderActivities::chargePayment, options, order)
-    val shipped = KWorkflow.executeActivity(OrderActivities::shipOrder, options, order)
+    val charged = KWorkflow.executeActivity(OrderActivities::chargePayment, order, options)
+    val shipped = KWorkflow.executeActivity(OrderActivities::shipOrder, order, options)
 
     OrderResult(success = true, trackingNumber = shipped)
 }
@@ -98,8 +98,8 @@ override suspend fun processOrder(order: Order): OrderResult {
     } catch (e: CancellationException) {
         // Workflow was cancelled - run cleanup in non-cancellable context
         withContext(NonCancellable) {
-            KWorkflow.executeActivity(OrderActivities::releaseInventory, options, order)
-            KWorkflow.executeActivity(OrderActivities::refundPayment, options, order)
+            KWorkflow.executeActivity(OrderActivities::releaseInventory, order, options)
+            KWorkflow.executeActivity(OrderActivities::refundPayment, order, options)
         }
         throw e  // Re-throw to propagate cancellation
     }
@@ -121,15 +121,15 @@ Use `withTimeout` for deadline-based cancellation:
 override suspend fun processWithDeadline(order: Order): OrderResult {
     return withTimeout(1.hours) {
         // Everything here cancels if it takes > 1 hour
-        KWorkflow.executeActivity(OrderActivities::validateOrder, options, order)
-        KWorkflow.executeActivity(OrderActivities::chargePayment, options, order)
+        KWorkflow.executeActivity(OrderActivities::validateOrder, order, options)
+        KWorkflow.executeActivity(OrderActivities::chargePayment, order, options)
         OrderResult(success = true)
     }
 }
 
 // Or get null instead of exception
 val result = withTimeoutOrNull(30.minutes) {
-    KWorkflow.executeActivity(OrderActivities::slowOperation, options, data)
+    KWorkflow.executeActivity(OrderActivities::slowOperation, data, options)
 }
 ```
 

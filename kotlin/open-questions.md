@@ -125,8 +125,8 @@ class GreetingActivities {
 // In workflow - call using method reference to impl class
 val result = KWorkflow.executeActivity(
     GreetingActivities::composeGreeting,
-    KActivityOptions(startToCloseTimeout = 30.seconds),
-    "Hello", "World"
+    kargs("Hello", "World"),
+    KActivityOptions(startToCloseTimeout = 30.seconds)
 )
 ```
 
@@ -138,8 +138,8 @@ class GreetingWorkflow {
     suspend fun getGreeting(name: String): String {
         return KWorkflow.executeActivity(
             GreetingActivities::composeGreeting,
-            KActivityOptions(startToCloseTimeout = 10.seconds),
-            "Hello", name
+            kargs("Hello", name),
+            KActivityOptions(startToCloseTimeout = 10.seconds)
         )
     }
 }
@@ -147,8 +147,8 @@ class GreetingWorkflow {
 // Client call using method reference to impl class
 val result = client.executeWorkflow(
     GreetingWorkflow::getGreeting,
-    KWorkflowOptions(workflowId = "greeting-123", taskQueue = "greetings"),
-    "World"
+    "World",
+    KWorkflowOptions(workflowId = "greeting-123", taskQueue = "greetings")
 )
 ```
 
@@ -179,16 +179,18 @@ val result = client.executeWorkflow(
 
 **Option C: KArgs Wrapper Classes** - Use typed `KArgs` classes for 2+ arguments, with simpler direct forms for 0-1 arguments. This provides full compile-time type safety while keeping common cases simple.
 
+See **[KArgs Documentation](./kargs.md)** for complete usage guide.
+
 ### Problem Statement
 
-The current activity execution API uses varargs which are not compile-time type-safe:
+Without type-safe wrappers, activity execution using varargs is not compile-time type-safe:
 
 ```kotlin
-// Current approach - vararg, no compile-time type checking
+// Without type safety - vararg, no compile-time type checking
 KWorkflow.executeActivity(
     GreetingActivities::composeGreeting,
-    KActivityOptions(startToCloseTimeout = 30.seconds),
-    "Hello", "World"  // vararg Any? - wrong types only caught at runtime
+    "Hello", "World",  // vararg Any? - wrong types only caught at runtime
+    KActivityOptions(startToCloseTimeout = 30.seconds)
 )
 ```
 
@@ -198,15 +200,15 @@ Three options are being considered:
 
 ---
 
-### Option A: Keep Current Varargs (No Change)
+### Option A: Keep Varargs (No Change)
 
-Keep the current vararg approach:
+Keep a vararg approach:
 
 ```kotlin
 KWorkflow.executeActivity(
     GreetingActivities::composeGreeting,
-    KActivityOptions(startToCloseTimeout = 30.seconds),
-    "Hello", "World"  // vararg Any?
+    "Hello", "World",  // vararg Any?
+    KActivityOptions(startToCloseTimeout = 30.seconds)
 )
 ```
 
@@ -231,24 +233,27 @@ KWorkflow.executeActivity(
     KActivityOptions(startToCloseTimeout = 30.seconds)
 )
 
-// 1 argument
+// 1 argument - passed directly
 KWorkflow.executeActivity(
     GreetingActivities::greet,
     "World",
     KActivityOptions(startToCloseTimeout = 30.seconds)
 )
 
-// 2 arguments
+// 2 arguments - passed directly
 KWorkflow.executeActivity(
     GreetingActivities::composeGreeting,
-    "Hello", "World",
+    "Hello",
+    "World",
     KActivityOptions(startToCloseTimeout = 30.seconds)
 )
 
-// 3 arguments
+// 3 arguments - passed directly
 KWorkflow.executeActivity(
     OrderActivities::process,
-    orderId, customer, items,
+    orderId,
+    customer,
+    items,
     KActivityOptions(startToCloseTimeout = 30.seconds)
 )
 ```
@@ -269,13 +274,16 @@ object KWorkflow {
 
     suspend fun <T, A1, A2, R> executeActivity(
         activity: KFunction3<T, A1, A2, R>,
-        arg1: A1, arg2: A2,
+        arg1: A1,
+        arg2: A2,
         options: KActivityOptions
     ): R
 
     suspend fun <T, A1, A2, A3, R> executeActivity(
         activity: KFunction4<T, A1, A2, A3, R>,
-        arg1: A1, arg2: A2, arg3: A3,
+        arg1: A1,
+        arg2: A2,
+        arg3: A3,
         options: KActivityOptions
     ): R
 
@@ -286,11 +294,11 @@ object KWorkflow {
 **Pros:**
 - Full compile-time type safety
 - Clean call syntax, no wrapper classes
-- Natural reading order
+- Natural reading order (method, args, options)
 
 **Cons:**
 - Many overloads (8 per method × 3 call types = 24 overloads)
-- Options always last (can't use trailing lambda syntax if options were a builder)
+- Argument order: options always last after potentially many args
 
 ---
 

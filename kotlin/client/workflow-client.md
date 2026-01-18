@@ -18,7 +18,7 @@ val workflowService = client.workflowService
 
 // For blocking calls from non-suspend contexts, use runBlocking
 val result = runBlocking {
-    client.executeWorkflow(MyWorkflow::process, options, input)
+    client.executeWorkflow(MyWorkflow::process, input, options)
 }
 ```
 
@@ -48,35 +48,55 @@ class KClient private constructor(...) {
      * Start a workflow and return a handle for interaction.
      * Does not wait for the workflow to complete.
      */
+
+    // 0 arguments
     suspend fun <T, R> startWorkflow(
         workflow: KSuspendFunction1<T, R>,
         options: KWorkflowOptions
     ): KWorkflowHandleWithResult<T, R>
 
+    // 1 argument - passed directly
     suspend fun <T, A1, R> startWorkflow(
         workflow: KSuspendFunction2<T, A1, R>,
-        options: KWorkflowOptions,
-        arg: A1
+        arg: A1,
+        options: KWorkflowOptions
     ): KWorkflowHandleWithResult<T, R>
 
-    // Overloads for 2+ arguments using kargs()...
+    // 2+ arguments - use kargs() wrapper for type safety
+    suspend fun <T, A1, A2, R> startWorkflow(
+        workflow: KSuspendFunction3<T, A1, A2, R>,
+        args: KArgs2<A1, A2>,
+        options: KWorkflowOptions
+    ): KWorkflowHandleWithResult<T, R>
+
+    // ... up to 6 arguments with KArgs
 
     /**
      * Start a workflow and wait for its result.
      * Suspends until the workflow completes.
      */
+
+    // 0 arguments
     suspend fun <T, R> executeWorkflow(
         workflow: KSuspendFunction1<T, R>,
         options: KWorkflowOptions
     ): R
 
+    // 1 argument - passed directly
     suspend fun <T, A1, R> executeWorkflow(
         workflow: KSuspendFunction2<T, A1, R>,
-        options: KWorkflowOptions,
-        arg: A1
+        arg: A1,
+        options: KWorkflowOptions
     ): R
 
-    // Overloads for 2+ arguments using kargs()...
+    // 2+ arguments - use kargs() wrapper for type safety
+    suspend fun <T, A1, A2, R> executeWorkflow(
+        workflow: KSuspendFunction3<T, A1, A2, R>,
+        args: KArgs2<A1, A2>,
+        options: KWorkflowOptions
+    ): R
+
+    // ... up to 6 arguments with KArgs
 
     /**
      * Get a typed handle for an existing workflow by ID.
@@ -131,26 +151,37 @@ class KClient private constructor(...) {
 
 ```kotlin
 // Execute workflow and wait for result (suspend function)
+// Argument order: method reference, argument, options
 val result = client.executeWorkflow(
     GreetingWorkflow::getGreeting,
+    "Temporal",
     KWorkflowOptions(
         workflowId = "greeting-123",
         taskQueue = "greeting-queue",
         workflowExecutionTimeout = 1.hours
-    ),
-    "Temporal"
+    )
 )
 
 // Or start async and get handle
 val handle = client.startWorkflow(
     GreetingWorkflow::getGreeting,
+    "Temporal",
     KWorkflowOptions(
         workflowId = "greeting-123",
         taskQueue = "greeting-queue"
-    ),
-    "Temporal"
+    )
 )
 val result = handle.result()  // Type inferred as String from method reference
+
+// Multiple arguments use kargs() wrapper for type safety
+val result = client.executeWorkflow(
+    OrderWorkflow::processOrder,
+    kargs(orderId, customerId),
+    KWorkflowOptions(
+        workflowId = "order-$orderId",
+        taskQueue = "orders"
+    )
+)
 
 // Get handle for existing workflow
 val existingHandle = client.workflowHandle<GreetingWorkflow>("greeting-123")

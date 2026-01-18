@@ -61,8 +61,8 @@ class BatchProcessorImpl : BatchProcessor {
         val batchSize = 100
         val items = KWorkflow.executeActivity(
             DataActivities::fetchBatch,
-            KActivityOptions(startToCloseTimeout = 1.minutes),
-            startOffset, batchSize
+            kargs(startOffset, batchSize),
+            KActivityOptions(startToCloseTimeout = 1.minutes)
         )
 
         if (items.isEmpty()) {
@@ -73,8 +73,8 @@ class BatchProcessorImpl : BatchProcessor {
         for (item in items) {
             KWorkflow.executeActivity(
                 DataActivities::processItem,
-                KActivityOptions(startToCloseTimeout = 30.seconds),
-                item
+                item,
+                KActivityOptions(startToCloseTimeout = 30.seconds)
             )
         }
 

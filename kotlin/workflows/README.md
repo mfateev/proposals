@@ -39,8 +39,8 @@ class GreetingWorkflowImpl : GreetingWorkflow {
     override suspend fun getGreeting(name: String): String {
         return KWorkflow.executeActivity(
             GreetingActivities::composeGreeting,
-            KActivityOptions(startToCloseTimeout = 10.seconds),
-            "Hello", name
+            kargs("Hello", name),
+            KActivityOptions(startToCloseTimeout = 10.seconds)
         )
     }
 }
@@ -50,8 +50,8 @@ class GreetingWorkflowImpl : GreetingWorkflow {
 
 | Pattern | Kotlin SDK |
 |---------|------------|
-| Execute activity | `KWorkflow.executeActivity(Interface::method, options, args)` |
-| Execute child workflow | `KWorkflow.executeChildWorkflow(Interface::method, options, args)` |
+| Execute activity | `KWorkflow.executeActivity(Interface::method, arg, options)` |
+| Execute child workflow | `KWorkflow.executeChildWorkflow(Interface::method, arg, options)` |
 | Timer/delay | `delay(duration)` - standard kotlinx.coroutines |
 | Wait for condition | `KWorkflow.awaitCondition { condition }` |
 | Parallel execution | `coroutineScope { async { ... } }.awaitAll()` |

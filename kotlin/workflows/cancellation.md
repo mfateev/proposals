@@ -52,8 +52,8 @@ override suspend fun processOrder(order: Order): OrderResult {
         withContext(NonCancellable) {
             KWorkflow.executeActivity(
                 OrderActivities::releaseReservation,
-                KActivityOptions(startToCloseTimeout = 30.seconds),
-                order
+                order,
+                KActivityOptions(startToCloseTimeout = 30.seconds)
             )
         }
         throw e  // Re-throw to propagate cancellation
@@ -110,8 +110,8 @@ class OrderWorkflowImpl : OrderWorkflow {
             try {
                 KWorkflow.executeActivity(
                     OrderActivities::releaseInventory,
-                    KActivityOptions(startToCloseTimeout = 30.seconds),
-                    item
+                    item,
+                    KActivityOptions(startToCloseTimeout = 30.seconds)
                 )
             } catch (e: Exception) {
                 // Log but continue cleanup
@@ -123,8 +123,8 @@ class OrderWorkflowImpl : OrderWorkflow {
             try {
                 KWorkflow.executeActivity(
                     OrderActivities::refundPayment,
-                    KActivityOptions(startToCloseTimeout = 30.seconds),
-                    order
+                    order,
+                    KActivityOptions(startToCloseTimeout = 30.seconds)
                 )
             } catch (e: Exception) {
                 // Log but continue cleanup
