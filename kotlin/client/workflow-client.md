@@ -120,9 +120,10 @@ class KClient private constructor(...) {
     // ==================== Async Activity Completion ====================
 
     /**
-     * Get a handle for async activity completion using task token.
+     * Creates a new activity completion client for completing activities asynchronously.
+     * See [Activity Completion](./activity-completion.md) for full documentation.
      */
-    fun activityCompletionHandle(taskToken: ByteArray): KActivityCompletionHandle
+    fun newActivityCompletionClient(): KActivityCompletionClient
 }
 ```
 
@@ -179,6 +180,7 @@ See [KOptions](../configuration/koptions.md#kworkflowoptions) for the full `KWor
 
 ## Related
 
+- [Activity Completion](./activity-completion.md) - Async activity completion
 - [Advanced Operations](./advanced.md) - SignalWithStart, UpdateWithStart
 - [KOptions](../configuration/koptions.md) - KWorkflowOptions reference
 - [Schedules](./schedules.md) - Schedule operations

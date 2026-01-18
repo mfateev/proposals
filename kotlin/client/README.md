@@ -12,6 +12,7 @@ The Kotlin SDK provides `KClient`, a unified client (like Python's `Client` and 
 |----------|-------------|
 | [Client](./workflow-client.md) | KClient, starting workflows, schedules |
 | [Workflow Handles](./workflow-handle.md) | Typed/Untyped handles, signals, queries, results |
+| [Activity Completion](./activity-completion.md) | Async activity completion from external services |
 | [Advanced Operations](./advanced.md) | SignalWithStart, UpdateWithStart |
 
 ## Quick Reference

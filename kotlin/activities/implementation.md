@@ -257,7 +257,7 @@ interface KActivityInfo {
 }
 ```
 
-> **Note:** `ActivityCompletionClient` for async activity completion uses the same API as the Java SDK. Async completion is not supported for local activities.
+> **Note:** For async activity completion, see [Activity Completion](../client/activity-completion.md). Async completion is not supported for local activities.
 
 ## Related
 
