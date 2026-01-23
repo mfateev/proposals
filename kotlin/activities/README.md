@@ -72,7 +72,7 @@ val result = KWorkflow.executeActivity<String>(
 | Execute activity | `KWorkflow.executeActivity(Interface::method, arg, options)` |
 | Execute by name | `KWorkflow.executeActivity<R>("name", arg, options)` |
 | Local activity | `KWorkflow.executeLocalActivity(Interface::method, arg, options)` |
-| Heartbeat | `KActivityContext.current().heartbeat(details)` |
+| Heartbeat | `KActivityContext.current.heartbeat(details)` |
 
 ## Related
 

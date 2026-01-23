@@ -88,7 +88,7 @@ For long-running activities, use heartbeating to report progress. **Heartbeat th
 ```kotlin
 class LongRunningActivitiesImpl : LongRunningActivities {
     override suspend fun processLargeFile(filePath: String): ProcessResult {
-        val context = KActivityContext.current()
+        val context = KActivityContext.current
         val lines = File(filePath).readLines()
 
         lines.forEachIndexed { index, line ->
@@ -112,7 +112,7 @@ Retrieve heartbeat details from a previous failed attempt:
 
 ```kotlin
 override suspend fun resumableProcess(data: List<Item>): ProcessResult {
-    val ctx = KActivityContext.current()
+    val ctx = KActivityContext.current
 
     // Get progress from previous attempt if available
     val startIndex = ctx.lastHeartbeatDetails<Int>() ?: 0
@@ -176,15 +176,15 @@ override fun processItemsBlocking(items: List<Item>): ProcessResult {
 }
 ```
 
-> **TODO:** `KActivityContext.current().cancellationFuture()` will be added when cancellation can be delivered without requiring heartbeat calls (e.g., server-push cancellation). This will return a `CompletableFuture<CancellationDetails>` for activities that need cancellation notification without heartbeating.
+> **TODO:** `KActivityContext.current.cancellationFuture()` will be added when cancellation can be delivered without requiring heartbeat calls (e.g., server-push cancellation). This will return a `CompletableFuture<CancellationDetails>` for activities that need cancellation notification without heartbeating.
 
 ## KActivityContext API
 
-`KActivityContext.current()` provides access to the activity execution context for both regular and local activities:
+`KActivityContext.current` provides access to the activity execution context for both regular and local activities:
 
 ```kotlin
 // In activity implementation
-val ctx = KActivityContext.current()
+val ctx = KActivityContext.current
 
 // Get activity info (works for both regular and local activities)
 val info = ctx.info
@@ -209,7 +209,7 @@ val taskToken = ctx.taskToken
 interface KActivityContext {
     /** Get the current activity context. */
     companion object {
-        fun current(): KActivityContext
+        val current: KActivityContext
     }
 
     val info: KActivityInfo
